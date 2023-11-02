@@ -1,3 +1,4 @@
+// Get references to various HTML elements by their IDs
 const question = document.getElementById('question');
 const choices = Array.from(document.getElementsByClassName('choice-text'));
 const progressText = document.getElementById('progressText');
@@ -5,21 +6,24 @@ const scoreText = document.getElementById('score');
 const progressBarFull = document.getElementById('progressBarFull');
 const loader = document.getElementById('loader');
 const game = document.getElementById('game');
+
+// Initialize variables to manage the quiz game
 let currentQuestion = {};
 let acceptingAnswers = false;
 let score = 0;
 let questionCounter = 0;
 let availableQuesions = [];
 
+// Create an empty array to store quiz questions
 let questions = [];
 
-fetch(
-    'https://opentdb.com/api.php?amount=20&category=22&difficulty=easy&type=multiple'
-)
+// Fetch quiz questions from an external API
+fetch('https://opentdb.com/api.php?amount=20&category=22&difficulty=easy&type=multiple')
     .then((res) => {
         return res.json();
     })
     .then((loadedQuestions) => {
+        // Format and store the loaded questions in the 'questions' array
         questions = loadedQuestions.results.map((loadedQuestion) => {
             const formattedQuestion = {
                 question: loadedQuestion.question,
@@ -40,16 +44,18 @@ fetch(
             return formattedQuestion;
         });
 
+        // Start the game once questions are loaded
         startGame();
     })
     .catch((err) => {
         console.error(err);
     });
 
-// CONSTANTS
+// Define constants for the game
 const CORRECT_BONUS = 10;
 const MAX_QUESTIONS = 20;
 
+// Function to start the game
 startGame = () => {
     questionCounter = 0;
     score = 0;
@@ -59,15 +65,15 @@ startGame = () => {
     loader.classList.add('hidden');
 };
 
+// Function to get a new question and update the UI
 getNewQuestion = () => {
     if (availableQuesions.length === 0 || questionCounter >= MAX_QUESTIONS) {
+        // Store the score and redirect to the end page when all questions are answered
         localStorage.setItem('mostRecentScore', score);
-        // Go to the end page
         return window.location.assign('./end.html');
     }
     questionCounter++;
     progressText.innerText = `Question ${questionCounter}/${MAX_QUESTIONS}`;
-    // Update the progress bar
     progressBarFull.style.width = `${(questionCounter / MAX_QUESTIONS) * 100}%`;
 
     const questionIndex = Math.floor(Math.random() * availableQuesions.length);
@@ -83,6 +89,7 @@ getNewQuestion = () => {
     acceptingAnswers = true;
 };
 
+// Add event listeners to the answer choices
 choices.forEach((choice) => {
     choice.addEventListener('click', (e) => {
         if (!acceptingAnswers) return;
@@ -91,14 +98,11 @@ choices.forEach((choice) => {
         const selectedChoice = e.target;
         const selectedAnswer = selectedChoice.dataset['number'];
 
-        // Determine if the selected answer is correct
         const isCorrect = selectedAnswer == currentQuestion.answer;
 
-        // Apply 'correct' or 'incorrect' class based on the correctness of the choice
         if (isCorrect) {
             selectedChoice.parentElement.classList.add('correct');
         } else {
-            // Highlight the correct answer in green
             choices[currentQuestion.answer - 1].parentElement.classList.add('correct');
             selectedChoice.parentElement.classList.add('incorrect');
         }
@@ -107,16 +111,17 @@ choices.forEach((choice) => {
             incrementScore(CORRECT_BONUS);
         }
 
+        // Reset classes and get the next question after a delay (2 seconds)
         setTimeout(() => {
-            // Remove the classes and get the next question
             choices.forEach((choice) => {
                 choice.parentElement.classList.remove('correct', 'incorrect');
             });
             getNewQuestion();
-        }, 1000);
+        }, 2000);
     });
 });
 
+// Function to increment the score and update the UI
 incrementScore = (num) => {
     score += num;
     scoreText.innerText = score;
